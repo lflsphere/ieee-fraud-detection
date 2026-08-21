@@ -1,0 +1,30 @@
+# data (never commit raw/large files — pull via Kaggle API instead)
+data/raw/*
+data/processed/*
+data/interim/*
+!data/raw/.gitkeep
+!data/processed/.gitkeep
+!data/interim/.gitkeep
+
+# models / large artifacts
+*.pkl
+*.pt
+*.pth
+*.ckpt
+models/
+mlruns/
+
+# python
+__pycache__/
+*.pyc
+.ipynb_checkpoints/
+.venv/
+venv/
+*.egg-info/
+
+# env / secrets
+.env
+kaggle.json
+
+# os
+.DS_Store
