@@ -1,0 +1,106 @@
+{
+  "n": 590540,
+  "fraud_rate": 0.03499000914417313,
+  "n_fraud": 20663,
+  "days": [
+    1,
+    182
+  ],
+  "weekly_fraud_rate_min_max": [
+    0.018522992671337682,
+    0.05061181735942485
+  ],
+  "weekly_fraud_rate_first4": [
+    0.0281,
+    0.0261,
+    0.0255,
+    0.0185
+  ],
+  "weekly_fraud_rate_last4": [
+    0.0325,
+    0.0367,
+    0.0416,
+    0.0432
+  ],
+  "weekly_volume_min_max": [
+    2754,
+    37251
+  ],
+  "nunique_card1": 13553,
+  "nunique_card2": 500,
+  "nunique_card3": 114,
+  "nunique_card5": 119,
+  "nunique_addr1": 332,
+  "nunique_DeviceInfo": 1786,
+  "nunique_P_emaildomain": 59,
+  "nunique_uid_card123_5_addr1": 38145,
+  "uid_txn_per_entity": {
+    "mean": 13.49206973391008,
+    "median": 2.0,
+    "p95": 43.0,
+    "max": 5866,
+    "pct_singleton": 0.39423253375278544
+  },
+  "pct_uids_with_any_fraud": 0.07917158212085464,
+  "share_of_fraud_in_multi_fraud_uids": 0.8825444726810674,
+  "D1_missing": 0.0021488806854743116,
+  "corr_D1_day": 0.07399546677933237,
+  "D1_max": 640.0,
+  "fraud_by_has_identity": {
+    "mean": {
+      "0": 0.020938501972857248,
+      "1": 0.07847025299342036
+    },
+    "size": {
+      "0": 446307,
+      "1": 144233
+    }
+  },
+  "fraud_by_productcd": {
+    "mean": {
+      "C": 0.11687,
+      "S": 0.059,
+      "H": 0.04766,
+      "R": 0.03783,
+      "W": 0.0204
+    },
+    "size": {
+      "C": 68519,
+      "S": 11628,
+      "H": 33024,
+      "R": 37699,
+      "W": 439670
+    }
+  },
+  "fraud_by_devicetype": {
+    "mean": {
+      "desktop": 0.06521,
+      "mobile": 0.10166,
+      "NaN": 0.02102
+    },
+    "size": {
+      "desktop": 85165,
+      "mobile": 55645,
+      "NaN": 449730
+    }
+  },
+  "amt": {
+    "count": 590540.0,
+    "mean": 135.0271759033203,
+    "std": 239.1625213623047,
+    "min": 0.25099998712539673,
+    "25%": 43.32099914550781,
+    "50%": 68.76900100708008,
+    "75%": 125.0,
+    "max": 31937.390625
+  },
+  "amt_fraud_mean": 149.24476623535156,
+  "amt_legit_mean": 134.51165771484375,
+  "amt_fraud_median": 75.0,
+  "amt_legit_median": 68.5,
+  "pct_round_amt_all": 0.5164984590374911,
+  "pct_round_amt_fraud": 0.5266418235493394,
+  "train_dt_max_day": 182,
+  "test_dt_min_day": 213,
+  "test_dt_max_day": 395
+}
