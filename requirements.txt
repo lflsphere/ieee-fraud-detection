@@ -1,12 +1,18 @@
-pandas
-numpy
-scikit-learn
-scipy
-matplotlib
-seaborn
-xgboost
-lightgbm
-torch
-kaggle
-pytest
-jupyter
+# Pinned to the versions actually used to produce the results in reports/.
+# `kaggle` is intentionally absent: this project reads the five raw CSVs from
+# data/raw/ (see data/raw/README.md for provenance) and never calls the API.
+numpy==2.4.6
+pandas==3.0.5
+pyarrow==25.0.1
+scipy==1.17.1
+scikit-learn==1.9.0
+matplotlib==3.11.1
+seaborn==0.13.2
+lightgbm==4.7.0
+xgboost==3.2.0
+torch==2.13.0
+jupyter==1.1.1
+nbformat==5.11.1
+nbconvert==7.17.1
+ipykernel==7.3.0
+pytest==9.1.1
