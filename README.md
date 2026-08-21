@@ -3,7 +3,7 @@
 Graduate case study: full pipeline from DGP reasoning through leakage-safe
 evaluation on the IEEE-CIS Fraud Detection dataset.
 
-See `IMPLEMENTATION_PLAN.md` for the phased plan and `AGENT_HANDOFF.md` for
+See `IMPLEMENTATION_PLAN.md` for the phased plan and `claude.md` for
 the brief used to hand this project off to an autonomous coding agent.
 
 ## Structure
