@@ -127,3 +127,27 @@ def test_calibration_table_bins_are_monotone_in_prediction():
     t = calibration_table(y, p, n_bins=10)
     assert t["mean_pred"].is_monotonic_increasing
     assert len(t) == 10
+
+
+@pytest.mark.parametrize("factory,expect", [
+    (lambda: LinearBaseline(max_iter=30), True),
+    (lambda: GBMModel(n_estimators=20, early_stopping_rounds=0), True),
+    (lambda: NeuralNet(max_epochs=1, patience=1), False),
+])
+def test_feature_importance_contract(synth, factory, expect):
+    """run_experiment calls feature_importance() on every fitted model.
+
+    A model that raises here kills a two-hour grid at the very end, which is
+    exactly what happened once: the float32 FunctionTransformer had no
+    get_feature_names_out, and ColumnTransformer refused to name the columns.
+    """
+    X, y = synth
+    cols = view_columns(X, "unsup")
+    m = factory().fit(X[cols], y)
+    imp = m.feature_importance()
+    if expect:
+        assert imp is not None and len(imp) > 0
+        assert imp.is_monotonic_decreasing
+        assert np.isfinite(imp.to_numpy()).all()
+    else:
+        assert imp is None

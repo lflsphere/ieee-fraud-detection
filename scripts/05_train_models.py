@@ -53,16 +53,27 @@ def main() -> None:
     logging.info("feature matrix %s", X.shape)
 
     results = []
+    failed = []
     for factory, view, name in EXPERIMENTS:
         logging.info("=== %s (view=%s) ===", name, view)
-        results.append(run_experiment(factory, X, meta, view=view, name=name))
-        # Checkpoint after every experiment: the full grid is a ~2 hour run and
-        # losing eight finished experiments to a failure in the ninth is not a
-        # trade worth making.
+        try:
+            results.append(run_experiment(factory, X, meta, view=view, name=name))
+        except Exception:
+            # One broken experiment must not discard the eight that worked.
+            # The grid is a ~2 hour run; it reports what it managed and names
+            # what it could not, rather than dying with nothing on disk.
+            logging.exception("experiment %s FAILED - continuing", name)
+            failed.append(name)
+            continue
+        # Checkpoint after every experiment, for the same reason.
         save_results(results, "05")
         gc.collect()
 
+    if not results:
+        raise RuntimeError("every experiment failed; nothing to report")
     save_results(results, "05")
+    if failed:
+        logging.error("FAILED experiments: %s", ", ".join(failed))
     table = results_table(results)
     print("\n=== Phase 5/7 results ===")
     print(table.round(4).to_string(index=False))
