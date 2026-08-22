@@ -148,6 +148,53 @@ views are defined as they are:
 matches or beats `base` for them, the collinearity argument in §1 is confirmed
 and the model gets a 213-column-smaller input for free.
 
+### Result: the collinearity argument did not pay off (added after Phase 7)
+
+It does not. The full grid is in `reports/final/07_evaluation.md`; the relevant
+holdout PR-AUCs are:
+
+| model family | `base` | `unsup` | `compact` |
+|---|---:|---:|---:|
+| linear | **0.1941** | 0.1907 | 0.1841 |
+| GBM | 0.5342 | **0.5354** | 0.5350 |
+| neural net | **0.4417** | 0.4165 | 0.4292 |
+
+**The prediction in §1 was wrong.** The compression helps no model family. It
+is mildly harmful to the linear model, inert for the GBM (0.0012 spread across
+a 41% swing in feature count), and harmful to the neural net — the family §1
+argued should benefit most, because its first-layer capacity is the one
+genuinely consumed by redundant inputs.
+
+Three things explain it, and they are worth more than the compression would
+have been:
+
+1. **PCA ranks directions by variance, and variance is not discriminative
+   power.** The discarded 5% of within-group variance was evidently not
+   uniformly uninformative. An unsupervised criterion cannot know which
+   directions separate the classes, and on a 3.5%-prevalence problem the
+   informative directions need not be high-variance ones.
+2. **The models already had cheaper answers to collinearity.** L2 shrinkage
+   handles it for the linear model; per-tree feature subsampling and
+   partition-based splits handle it for the GBM; embeddings plus BatchNorm
+   handle it for the neural net. Collinearity was real — Phase 2 measured it —
+   but it was already priced in.
+3. **The damage concentrates in the head of the score distribution.** Under
+   `compact` the linear model records the *best* ROC-AUC of its three arms
+   (0.8387) and by far the *worst* precision@1% (0.054 against 0.119 for
+   `base`). Compression buys a little global ranking quality and sells
+   precision exactly where a 1% review budget operates.
+
+**What survives.** The structural findings stand on their own: the `V*` block
+really does decompose into 15 exact missingness groups; it really is
+compressible to 126 components; the stability sweep really did reject k=8 on
+reproducibility grounds; and a label-free partition really does isolate 4,853
+transactions at 40.8% fraud. What does not survive is the inference that
+compressibility implies a better input representation. Phase 9 reports this as
+a negative result rather than dropping it — the one arm with practical value is
+`gbm+compact`, which matches the full GBM on 41% fewer features and is
+therefore a *deployment* argument (a narrower scoring-time pipeline), not an
+accuracy one.
+
 ## 5. Limitations
 
 * **K-means assumes isotropic, roughly equal-variance clusters** in the PCA
