@@ -87,8 +87,7 @@ def run_experiment(model_factory: Callable[[], FraudModel],
                    X: pd.DataFrame, meta: pd.DataFrame,
                    view: str = "base",
                    name: str | None = None,
-                   n_folds: int = config.N_TIME_FOLDS,
-                   fit_holdout_on_all: bool = True) -> ExperimentResult:
+                   n_folds: int = config.N_TIME_FOLDS) -> ExperimentResult:
     """Evaluate one (model, feature view) pair on the shared protocol."""
     cols = view_columns(X, view)
     y = meta[config.TARGET].to_numpy()
@@ -118,15 +117,20 @@ def run_experiment(model_factory: Callable[[], FraudModel],
     per_fold = pd.DataFrame(rows)
 
     # ---- final holdout ---------------------------------------------------
-    # Refit on everything before the holdout, using the last CV validation
-    # block for early stopping. That block is inside the training period, so
-    # the holdout stays untouched.
-    tr_all = np.concatenate([folds[-1][0], folds[-1][1]]) if fit_holdout_on_all \
-        else folds[-1][0]
-    es_idx = folds[-1][1]
+    # The three-way chronological split exists for exactly this: fit on the
+    # earliest 65%, early-stop on the next 15%, score the final 20% once.
+    #
+    # The tempting alternative -- fit on the whole 80% and early-stop on its
+    # last block -- is wrong, because that block is then inside the training
+    # set: the stopping criterion would be measured on rows the model has
+    # already fitted, so it never triggers and the "best iteration" it reports
+    # is meaningless. Giving up 15% of the training rows is the price of an
+    # honest stopping rule, and it keeps the holdout untouched by every
+    # decision taken anywhere in the project.
     final = model_factory()
     t0 = time.perf_counter()
-    final.fit(X.iloc[tr_all][cols], y[tr_all], X.iloc[es_idx][cols], y[es_idx])
+    final.fit(X.iloc[sp.train_idx][cols], y[sp.train_idx],
+              X.iloc[sp.valid_idx][cols], y[sp.valid_idx])
     fit_seconds = time.perf_counter() - t0
 
     hs = final.predict_proba(X.iloc[sp.test_idx][cols])
