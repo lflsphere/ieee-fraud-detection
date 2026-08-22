@@ -8,6 +8,7 @@ reports/results/05_* and the figures used by Phases 7 and 9 in reports/figures/.
 """
 from __future__ import annotations
 
+import gc
 import logging
 import warnings
 
@@ -55,6 +56,11 @@ def main() -> None:
     for factory, view, name in EXPERIMENTS:
         logging.info("=== %s (view=%s) ===", name, view)
         results.append(run_experiment(factory, X, meta, view=view, name=name))
+        # Checkpoint after every experiment: the full grid is a ~2 hour run and
+        # losing eight finished experiments to a failure in the ninth is not a
+        # trade worth making.
+        save_results(results, "05")
+        gc.collect()
 
     save_results(results, "05")
     table = results_table(results)

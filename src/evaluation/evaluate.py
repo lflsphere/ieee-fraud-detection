@@ -28,6 +28,7 @@ the one claim this phase exists to support.
 
 from __future__ import annotations
 
+import gc
 import json
 import logging
 import time
@@ -113,6 +114,12 @@ def run_experiment(model_factory: Callable[[], FraudModel],
         log.info("%-24s fold %d  PR-AUC %.4f (base %.4f, lift %.1fx)  ROC %.4f  %.0fs",
                  name, k, m["pr_auc"], m["base_rate"], m["pr_auc_lift"],
                  m["roc_auc"], m["fit_seconds"])
+        # Each fold's fitted model holds its own imputer, scaler and encoders,
+        # and the fold slices are copies. Without an explicit drop they stay
+        # alive until the next rebind, so peak memory is two folds rather than
+        # one -- enough to OOM on the widest feature view.
+        del model, scores
+        gc.collect()
 
     per_fold = pd.DataFrame(rows)
 
@@ -179,6 +186,9 @@ def results_table(results: list[ExperimentResult]) -> pd.DataFrame:
 
 
 def save_results(results: list[ExperimentResult], tag: str) -> None:
+    """Persist everything. Called after *each* experiment, not only at the end,
+    so a crash late in a two-hour grid does not discard the runs that already
+    finished."""
     table = results_table(results)
     table.to_csv(config.RESULTS_DIR / f"{tag}_summary.csv", index=False)
     pd.concat([r.per_fold for r in results]).to_csv(
