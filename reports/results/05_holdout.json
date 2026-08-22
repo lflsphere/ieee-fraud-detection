@@ -40,5 +40,26 @@
     "view": "unsup",
     "fit_seconds": 101.48408875800033,
     "n_features": 637
+  },
+  {
+    "n": 118108,
+    "base_rate": 0.034409184813899145,
+    "pr_auc": 0.18409179282217716,
+    "pr_auc_lift": 5.350077132539788,
+    "roc_auc": 0.8386785065361567,
+    "brier": 0.2059975415468216,
+    "precision@1%": 0.05345911949685535,
+    "recall@1%": 0.01673228346456693,
+    "f1@1%": 0.025487256371814097,
+    "n_flagged": 1272,
+    "threshold": 1.0,
+    "f1_oracle": 0.3146734520780322,
+    "f1_oracle_threshold": 0.939620852470398,
+    "f1_oracle_precision": 0.27645305514157975,
+    "f1_oracle_recall": 0.36515748031496065,
+    "model": "linear+compact",
+    "view": "compact",
+    "fit_seconds": 54.175186534000204,
+    "n_features": 298
   }
 ]
