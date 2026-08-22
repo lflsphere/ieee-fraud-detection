@@ -468,8 +468,12 @@ This is the EDA result with the largest consequence for the whole project, so it
 """)
 
 code(r"""
-uid = (df["card1"].astype(str) + "_" + df["card2"].astype(str) + "_" +
-       df["card3"].astype(str) + "_" + df["card5"].astype(str) + "_" + df["addr1"].astype(str))
+# Use the project's own key builder: it maps a missing component to an "NA"
+# level. A naive `a.astype(str) + "_" + b.astype(str)` propagates NaN across
+# the whole concatenation in pandas 3, which would silently collapse the
+# 75,885 rows that have at least one missing component into one pseudo-entity.
+from src.features.build_features import _concat_key
+uid = _concat_key(df, ["card1", "card2", "card3", "card5", "addr1"])
 ent = pd.DataFrame({"uid": uid, "y": y}).groupby("uid")["y"].agg(n="size", n_fraud="sum")
 
 fig, axes = plt.subplots(1, 3, figsize=(15, 3.8))
@@ -501,8 +505,8 @@ print(f"share of fraud in >1-fraud entities:  {ent.loc[ent['n_fraud']>1,'n_fraud
 """)
 
 md(r"""
-**Interpretation.** Fraud is bursty and entity-bound. Only **7.9%** of the 38,145 proxy entities ever carry a
-fraud label, but **88.3% of all fraudulent transactions sit in entities that carry more than one fraud.**
+**Interpretation.** Fraud is bursty and entity-bound. Only **8.3%** of the 42,946 proxy entities ever carry a
+fraud label, but **91.7% of all fraudulent transactions sit in entities that carry more than one fraud.**
 A compromised credential is not defrauded once; it is drained.
 
 That single fact invalidates random cross-validation for this dataset. Under a shuffled split, transaction
@@ -533,7 +537,7 @@ md(r"""
 | 53% of testable columns have informative missingness (MNAR) | Explicit `*_isnull` indicators; `has_identity_record` as the canonical identity-block indicator; NaN passed natively to LightGBM. |
 | 339 `V*` columns → 89 PCs for 95% within-group variance | Phase 4 PCA/clustering is justified as compression, targeted at the linear and neural models specifically. |
 | `ProductCD` splits the problem 5.7× (C vs W), on 74%/12% of volume | `ProductCD` interactions prioritised; considered as a regime variable, not just a category. |
-| 88.3% of fraud sits in repeat-fraud entities | Chronological split enforced by assertion; strictly-backward-looking entity aggregations only (Phase 3); quantified in the Phase 8 leakage audit. |
+| 91.7% of fraud sits in repeat-fraud entities | Chronological split enforced by assertion; strictly-backward-looking entity aggregations only (Phase 3); quantified in the Phase 8 leakage audit. |
 
 **Deliberately not pursued.** Two things EDA suggested that we ruled out. (i) A per-entity *target* encoding
 computed over the full training set — extremely predictive in-sample and pure leakage; Phase 8 measures the

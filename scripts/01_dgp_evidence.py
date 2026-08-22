@@ -32,8 +32,13 @@ out['weekly_volume_min_max']=[int(wk.n.min()), int(wk.n.max())]
 for c in ['card1','card2','card3','card5','addr1','DeviceInfo','P_emaildomain']:
     out[f'nunique_{c}'] = int(df[c].nunique())
 # composite proxy uid
-uid = (df['card1'].astype(str)+'_'+df['card2'].astype(str)+'_'+df['card3'].astype(str)
-       +'_'+df['card5'].astype(str)+'_'+df['addr1'].astype(str))
+# NB: build the composite key with _concat_key, which maps NaN to its own
+# "NA" level.  A naive ``a.astype(str) + "_" + b.astype(str)`` propagates NaN
+# across the whole concatenation in pandas 3, silently collapsing every row
+# with any missing component (~12% here) into a single giant pseudo-entity.
+from src.features.build_features import _concat_key
+uid = _concat_key(df, ['card1','card2','card3','card5','addr1'])
+out['n_rows_with_missing_component'] = int(df[['card1','card2','card3','card5','addr1']].isna().any(axis=1).sum())
 out['nunique_uid_card123_5_addr1'] = int(uid.nunique())
 vc = uid.value_counts()
 out['uid_txn_per_entity'] = {'mean': float(vc.mean()), 'median': float(vc.median()),

@@ -388,7 +388,14 @@ class FeatureBuilder:
         """Expanding target encoding restricted to *adjudicated* history.
 
         For row *i* in group *g*, the encoding is the smoothed mean label over
-        rows *j* with ``g_j == g_i`` **and** ``t_j <= t_i - lag``.
+        rows *j* with ``g_j == g_i`` **and** ``t_j < t_i - lag``.
+
+        The comparison is strict (``<``, i.e. ``side="left"``) rather than
+        ``<=``. That matters at ``lag=0``, where ``<=`` would include the row's
+        own timestamp — and therefore the row's own label — turning the feature
+        into a direct copy of the target. It also matches
+        ``_prior_count_within_window``, which likewise treats simultaneous
+        transactions as not prior.
 
         Two separate leakage controls are in play:
 
@@ -416,9 +423,12 @@ class FeatureBuilder:
             yy = y[idx]
             cum_y = np.concatenate([[0.0], np.cumsum(yy)])
             # Number of same-group rows old enough to be adjudicated.
-            k = np.searchsorted(tt, tt - lag, side="right")
+            k = np.searchsorted(tt, tt - lag, side="left")
             s = cum_y[k]
-            out[idx] = ((s + prior * smoothing) / (k + smoothing)).astype(np.float32)
+            denom = k + smoothing
+            enc = np.where(denom > 0, (s + prior * smoothing) / np.maximum(denom, 1e-12),
+                           prior)
+            out[idx] = enc.astype(np.float32)
         return out
 
     # -- interaction plumbing ---------------------------------------------

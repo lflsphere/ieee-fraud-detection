@@ -17,19 +17,20 @@ The data gives us no such key. What it gives us instead is a set of **noisy
 proxies for a latent entity**: `card1`–`card6`, `addr1`/`addr2`, and — for the
 24.4% of rows that have an identity record — `DeviceInfo` and the `id_*` block.
 
-How noisy? Concatenating `card1|card2|card3|card5|addr1` yields **38,145
-distinct proxy entities** across 590,540 transactions:
+How noisy? Concatenating `card1|card2|card3|card5|addr1` (treating a missing component as
+its own `NA` level — 75,885 rows have at least one) yields **42,946 distinct
+proxy entities** across 590,540 transactions:
 
 | Statistic | Value |
 |---|---:|
-| Distinct proxy entities | 38,145 |
+| Distinct proxy entities | 42,946 |
 | Median transactions per entity | 2 |
-| Mean transactions per entity | 13.5 |
-| 95th percentile | 43 |
-| Maximum | 5,866 |
-| Entities seen exactly once | 39.4% |
+| Mean transactions per entity | 13.8 |
+| 95th percentile | 42 |
+| Maximum | 9,900 |
+| Entities seen exactly once | 40.3% |
 
-That single entity with 5,866 transactions is almost certainly a collision —
+That single entity with 9,900 transactions is almost certainly a collision —
 several real cards sharing an issuer/BIN/region signature — not one very busy
 cardholder. So the proxy is simultaneously **too coarse** (it merges distinct
 people) and **too fine** (a cardholder who moves house gets a new `addr1` and
@@ -37,7 +38,7 @@ thus a new identity). Every entity-level feature built in Phase 3 inherits
 this error, and the feature dictionary says so explicitly for each one.
 
 **Why this matters beyond feature design:** fraud is *concentrated* within
-entities. Only 7.9% of proxy entities ever carry a fraud label, but **88.3% of
+entities. Only 8.3% of proxy entities ever carry a fraud label, but **91.7% of
 all fraudulent transactions sit in entities that carry more than one fraud**.
 Fraud arrives in bursts on a compromised credential. A randomly shuffled
 train/test split would therefore place transactions from the *same burst* on
@@ -102,7 +103,7 @@ unstable) rather than measurements.
 
 | Latent variable | Observed proxies | Why it is only a proxy |
 |---|---|---|
-| **True cardholder / account** | `card1`–`card6`, `addr1`, `addr2` | Collides across people (5,866-transaction "entity"); fragments when address changes. `card1` has 13,553 levels, `addr1` only 332 — these are issuer/BIN/region codes, not identities. |
+| **True cardholder / account** | `card1`–`card6`, `addr1`, `addr2` | Collides across people (9,900-transaction "entity"); fragments when address changes. `card1` has 13,553 levels, `addr1` only 332 — these are issuer/BIN/region codes, not identities. |
 | **Physical device / session** | `DeviceType`, `DeviceInfo` (1,786 levels), `id_30`–`id_33` | Present for only 24.4% of rows; browser/OS strings are shared by millions of devices. |
 | **Merchant and merchant risk** | `ProductCD`, `R_emaildomain`, parts of the `V*` block | No merchant ID exists at all. `ProductCD` has 5 levels for what is certainly a heterogeneous merchant population. |
 | **Account tenure / relationship age** | `D1`–`D15` (timedeltas, `D1` ranges 0–640 days) | Vesta describes these as "days since previous event of type *k*." Which event is undisclosed, so tenure is inferred, not measured. |
@@ -195,7 +196,7 @@ sufficient for the deployment decision (route to review or not).
 
 | DGP property | Where it constrains the build |
 |---|---|
-| Fraud clusters within proxy entities (88.3% of fraud in repeat-fraud entities) | Entity aggregation features must be **strictly backward-looking** (Phase 3); random CV is disallowed (Phase 7). |
+| Fraud clusters within proxy entities (91.7% of fraud in repeat-fraud entities) | Entity aggregation features must be **strictly backward-looking** (Phase 3); random CV is disallowed (Phase 7). |
 | Class prior drifts 1.85% → 5.06% | Report per-fold metrics, not just the mean; prefer PR-AUC, which is defined against the prevailing base rate, and interpret it *relative to that base rate* per fold (Phase 7). |
 | Labels are a policy output with selection bias | Evaluate at a fixed review budget; do not over-interpret calibration; do not claim to measure "true fraud rate" (Phase 7, Phase 9). |
 | `TransactionDT` is a timedelta from an unknown origin | Use it for ordering and elapsed time only. Any hour-of-day/day-of-week feature is an **assumption** and is labelled as one (Phase 3). |
