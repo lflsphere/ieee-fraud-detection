@@ -107,8 +107,11 @@ def experiment_b_target_encoding(df_joined) -> pd.DataFrame:
     # Fully leaky arm: overwrite the *_te columns with a full-dataset encoding
     # that includes the row's own label and every future label.
     leaky = arms["expanding, 30-day label lag (used)"].copy()
-    for col in ["card1", "addr1", "P_emaildomain"]:
-        gid = pd.factorize(d[col].astype("string").fillna("NA"),
+    from src.features.build_features import TARGET_ENCODE_COLS, _concat_key
+    for col in TARGET_ENCODE_COLS:
+        src_col = (d[col] if col in d.columns
+                   else _concat_key(d, col.split("_x_")))
+        gid = pd.factorize(src_col.astype("string").fillna("NA"),
                            use_na_sentinel=False)[0]
         leaky[f"{col}_te"] = leaky_target_encode_full_data(gid, y)
     arms["full-dataset target encoding (leaky)"] = leaky
@@ -138,8 +141,9 @@ def experiment_c_preprocessing(X, meta) -> pd.DataFrame:
     no label is involved, only the covariate distribution of the future.
     """
     y = meta[config.TARGET].to_numpy()
-    cols = [c for c in view_columns(X, "compact")
-            if not c.endswith("_code")][:250]
+    # Drop the categorical codes: one-hot would dominate the runtime and the
+    # question here is about the *numeric* preprocessing statistics.
+    cols = [c for c in view_columns(X, "compact") if not c.endswith("_code")]
     sp = chronological_split(meta)
     tr = np.concatenate([sp.train_idx, sp.valid_idx])
     te = sp.test_idx
