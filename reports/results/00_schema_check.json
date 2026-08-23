@@ -1,0 +1,37 @@
+{
+  "files": {
+    "train_transaction": {
+      "n_cols": 394,
+      "n_rows": 590540
+    },
+    "train_identity": {
+      "n_cols": 41,
+      "n_rows": 144233
+    },
+    "test_transaction": {
+      "n_cols": 393,
+      "n_rows": 506691
+    },
+    "test_identity": {
+      "n_cols": 41,
+      "n_rows": 141907
+    },
+    "sample_submission": {
+      "n_cols": 2,
+      "n_rows": 506691
+    }
+  },
+  "discrepancies": [
+    "test_identity.csv uses hyphenated column names (id-01 ... id-38) while train_identity.csv uses underscores (id_01 ... id_38). Normalised in src.data.load.normalise_identity_columns."
+  ],
+  "target_in_train": true,
+  "target_in_test": false,
+  "train_identity_match_rate": 0.2442391709283029,
+  "checksums_md5": {
+    "train_transaction.csv": "58b4038d8715f5e11007b826bef00ce7",
+    "train_identity.csv": "8487db5001c8bad139f3318d5d3db416",
+    "test_transaction.csv": "7ea6862ef4e078efb309e19fa49178fd",
+    "test_identity.csv": "54ae784303f82e5cadeb2d899b05c6a8",
+    "sample_submission.csv": "a4dece4fe5e7a398319009b94f7b34a5"
+  }
+}

@@ -1,0 +1,10 @@
+{
+  "pit_rows_checked": 300,
+  "pit_prior_count_exact": true,
+  "pit_prior_mean_exact": true,
+  "n_features": 508,
+  "n_features_leaking_future": 0,
+  "features_leaking_future": [],
+  "n_features_depending_on_fit_population": 44,
+  "unexpected_fit_dependencies": []
+}
