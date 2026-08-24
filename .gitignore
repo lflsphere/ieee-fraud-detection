@@ -12,7 +12,7 @@ data/interim/*
 *.pt
 *.pth
 *.ckpt
-models/
+/models/
 mlruns/
 specification/
 scripts/
