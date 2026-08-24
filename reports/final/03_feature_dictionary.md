@@ -80,12 +80,47 @@ but not *generalising*.
 
 Only 21 indicators are emitted, not 171, because the identity-block indicators
 are near-duplicates of one another (they all restate the 24.4% join rate).
-`has_identity_record` is the single canonical version of that signal; the 21
-cover columns whose missingness is *not* explained by the join: `dist1`,
-`dist2`, `D6`–`D9`, `D12`–`D14`, `M1`, `M4`–`M9`, `card2`, `card5`, `addr1`,
-`P_emaildomain`, `R_emaildomain`. Emitting all 171 would add strongly
-collinear columns — actively harmful to the linear baseline, merely wasteful
-for the GBM.
+`has_identity_record` is the single canonical version of that signal. Emitting
+all 171 would add strongly collinear columns — actively harmful to the linear
+baseline, merely wasteful for the GBM.
+
+**How "explained by the join" was tested** —
+`scripts/03b_missingness_vs_join.py`, output in
+`reports/results/03_missingness_vs_join.csv`. For each candidate, the φ
+coefficient between its is-null indicator and "has no identity record":
+
+| φ | Meaning | Columns |
+|---|---|---|
+| ≈ +1 | missing exactly when the join fails → redundant | `id_12` (1.000), `id_02` / `DeviceType` / `id_31` (0.982–0.985) — the excluded block |
+| **+0.91** | **still largely a restatement of the join** | **`R_emaildomain`** — see below |
+| +0.42 … +0.67 | partly explained; a real residual remains | `D8`, `D9` (0.671), `D13`, `D14` (0.602), `D6` (0.592), `D12` (0.544), `dist2` (0.458), `D7` (0.423) |
+| ≈ 0 | independent of the join | `card5` (0.004), `card2` (0.041), `P_emaildomain` (0.104), `M4` (−0.116) |
+| −0.47 … −0.90 | **inverse**: missing when the join *succeeds* | `M6` (−0.897), `M1` (−0.617), `addr1` (−0.557), `dist1`, `M5`, `M7`–`M9` (≈ −0.47) |
+
+Two things this measurement corrected, both of which an earlier draft of this
+document got wrong by reasoning structurally instead of empirically:
+
+1. **The structural argument is necessary but not sufficient.** All of these
+   columns live in `train_transaction.csv`, so a failed join cannot
+   *mechanically* null them the way it nulls `id_*`. That says nothing about
+   whether they are *statistically* redundant with the join, and for several
+   of them they partly are.
+2. **`R_emaildomain` should not have been kept.** At φ = 0.910 (98.6% missing
+   without an identity record versus 9.1% with one) its indicator is nearly as
+   redundant as the `id_*` block that was deliberately excluded. It is a
+   transaction-file column, which is why the structural argument waved it
+   through, but recipient email is evidently populated on the same
+   product/channel mix that generates identity records. Keeping it was an
+   error; it is retained in the shipped `ISNULL_COLS` only because the models
+   were already trained, and §10 below records the measured (nil) impact.
+
+The most interesting group is the **inverse** one. `M1`, `M5`–`M9` and `dist1`
+are **100% missing on every transaction that has an identity record** and only
+28–47% missing on those that do not. `M6` is the extreme case: 5.6% missing
+without an identity record, 100% with one. That is not noise — it implies two
+largely disjoint collection pipelines, and it makes these the *most*
+orthogonal indicators in the set to `has_identity_record`, just in the
+opposite direction from the one originally assumed.
 
 ## 4. `D*` reference-day normalisation
 

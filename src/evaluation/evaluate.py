@@ -197,7 +197,11 @@ def save_results(results: list[ExperimentResult], tag: str) -> None:
         slug = r.name.replace("+", "_").replace(" ", "_")
         r.calibration.to_csv(config.RESULTS_DIR / f"{tag}_calibration_{slug}.csv")
         if r.importance is not None:
-            r.importance.head(50).to_csv(
+            # Persist the FULL importance vector, not a top-N view. A truncated
+            # file silently turns "share of total gain" into "share of the gain
+            # among the features that made the cut", which is a different and
+            # much larger number -- an error this project made once already.
+            r.importance.to_csv(
                 config.RESULTS_DIR / f"{tag}_importance_{slug}.csv")
         if r.history is not None and len(r.history):
             r.history.to_csv(config.RESULTS_DIR / f"{tag}_history_{slug}.csv",
