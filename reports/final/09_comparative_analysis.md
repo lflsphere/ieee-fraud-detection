@@ -287,6 +287,13 @@ it.
 
 Operational requirements:
 
+0. **Report the queue's metrics segmented by `has_identity_record`, and reserve
+   part of the budget for exploration.** 86.8% of the queue falls in the 20.1%
+   of transactions carrying an identity record, and recall is 40.1% there
+   against 8.3% elsewhere (Phase 1 §4). Pooled precision hides a model that is
+   strong inside the incumbent system's footprint and weak outside it; an
+   exploration slice aimed at the identity-absent segment is the only source of
+   labels in the region where both systems are blind.
 1. **Retrain at least monthly.** Fraud rate moved 1.85% → 5.06% across the
    observed 26 weeks (Phase 2 §1), and the CV-to-holdout drop of 16% is what
    ~40 days of staleness costs.

@@ -37,6 +37,41 @@ people) and **too fine** (a cardholder who moves house gets a new `addr1` and
 thus a new identity). Every entity-level feature built in Phase 3 inherits
 this error, and the feature dictionary says so explicitly for each one.
 
+**Why the key stops where it does.** `card4`, `card6` and `addr2` are
+deliberately excluded, and the reason is measured
+(`scripts/01b_entity_key_and_bias.py`, output
+`reports/results/01_entity_key.csv`) rather than aesthetic:
+
+| appended to the base key | extra entities | % gain | entities where the column is single-valued |
+|---|---:|---:|---:|
+| `card4` | **0** | 0.00% | **100.00%** |
+| `card6` | 72 | 0.17% | 99.83% |
+| `addr2` | 53 | 0.12% | 99.88% |
+| all three | 125 | 0.29% | — |
+
+`card4` is *perfectly determined* by the base key: every one of the 42,946
+entities has exactly one value of it, because the BIN encoded in
+`card1`/`card2` already fixes the card network. Adding it is provably a no-op.
+`card6` (4 levels) and `addr2` (74 levels but 99.2% a single value) are
+determined for 99.8% of entities.
+
+Exclusion is *actively* right, not merely harmless. A near-constant column
+appended to a composite key can only **split** entities, never merge them, so
+the 72 and 53 extra entities it would create are either a genuine distinction
+— two different cards sharing a BIN, a region *and* `card5` — or the same
+physical card recorded inconsistently (a debit card logged once as credit).
+Given the 99.8% determinism, inconsistency is the likelier explanation for most
+of them, and the result would be **fragmenting real accounts and shortening
+their history**. The Phase 3 point-in-time aggregates depend on entity history
+being as long and unbroken as possible, so fragmentation carries a real cost
+against a ~0.2% resolution gain.
+
+All three remain *model features* (`card4_code`, `card6_code`, `addr2_code`,
+plus the `ProductCD × card4` and `ProductCD × card6` interactions). Carrying
+risk signal and identifying an entity are different jobs: `card4` at four
+levels is a decent risk feature — discover runs 7.7% fraud against amex's 2.9%
+— and a useless identifier.
+
 **Why this matters beyond feature design:** fraud is *concentrated* within
 entities. Only 8.3% of proxy entities ever carry a fraud label, but **91.7% of
 all fraudulent transactions sit in entities that carry more than one fraud**.
@@ -136,6 +171,71 @@ strictly, an *imitator of the existing detection policy's residual*, and
 deploying it creates a feedback loop: it declines what the old system declined,
 so those transactions never generate new labels, so the blind spot is never
 observed.
+
+### How the two biases land on the review budget
+
+They act on **different quantities and in opposite directions**, so they do not
+cancel. Measured on the deployed GBM's holdout queue — 1,182 flagged of 118,108
+(`scripts/01b_entity_key_and_bias.py`, `reports/results/01_review_bias.csv`):
+
+| population | n | share with an identity record |
+|---|---:|---:|
+| holdout (all) | 118,108 | 20.1% |
+| the 1% review queue | 1,182 | **86.8%** |
+| queue: true positives | 1,043 | 85.3% |
+| queue: **false positives** | 139 | **97.8%** |
+| missed fraud (false negatives) | 3,021 | 44.0% |
+
+| segment | n | fraud rate | share of queue | recall *within* segment |
+|---|---:|---:|---:|---:|
+| identity present | 23,769 | 9.34% | 86.8% | **40.1%** |
+| identity absent | 94,339 | 1.96% | 13.2% | **8.3%** |
+
+**Selection bias biases the measurement.** Undetected fraud is labelled
+legitimate, so some of the 139 false positives are real fraud that never
+charged back: measured precision (88.2%) is a **lower bound**. The same
+mechanism understates the denominator of recall, so measured recall (25.7%) is
+an **upper bound**. Per flagged item the queue is better than it looks; in
+coverage it is worse.
+
+**Feedback bias biases what the queue is worth.** 86.8% of the review budget
+lands in the 20.1% of transactions that carry an identity record — a 4.3×
+concentration — and recall is 40.1% there against **8.3%** where no identity
+record exists. Fraud that evaded the incumbent's collection also evades this
+model, and it surfaces as a false *negative*, which precision cannot see at
+all. So the incremental value over the status quo is materially lower than 88%
+precision suggests: the budget is largely spent re-detecting detectable fraud.
+
+**The interaction is not the intuitive one.** One might expect selection bias
+to substantially rehabilitate the false-positive count. It probably does not.
+Undetected fraud should be densest where the incumbent was *not* looking — the
+identity-absent segment — yet **97.8% of false positives sit in the
+identity-present segment**, where labelling is most reliable. Only about three
+of the 139 fall where "this false positive is really unlabelled fraud" is the
+likely story. The measured precision is therefore closer to the truth than the
+generic argument implies, and most of those false positives are real.
+
+**A caveat on the diagnosis.** This section reads identity-presence as the
+incumbent's triage. The Phase 3 missingness analysis weakens that:
+`R_emaildomain` tracks the join at φ = 0.910, which fits a *product/channel*
+explanation — identity data is collected on particular channels, and those
+channels are riskier — at least as well. Both readings produce the numbers
+above; they differ in remedy, and discriminating them requires the collection
+policy, which is not in the data.
+
+**What follows for the review budget, under either reading:**
+
+1. **Do not spend the whole 1% on top scores.** Reserve an exploration slice
+   for the identity-absent segment. It is the only way to generate labels where
+   both the incumbent and this model are blind; without it the feedback loop
+   closes permanently.
+2. **Report precision and recall segmented** by `has_identity_record`. A single
+   88% headline conceals 40.1% against 8.3%.
+3. **Do not tune the threshold to maximise measured precision.** That drives the
+   queue further inside the incumbent's footprint — improving the metric while
+   reducing marginal value.
+4. **Log reviewer disposition on false positives.** Clustering on
+   identity-present is the feedback loop made visible in operations.
 
 **Practical implication we act on:** we do not treat a high false-positive
 count as automatically bad in Phase 7. We report performance at a fixed

@@ -1,0 +1,8 @@
+population,n,share_with_identity,fraud_rate,share_of_queue,recall_within_segment
+holdout (all),118108,0.2012480102956616,,,
+1% review queue,1182,0.868020304568528,,,
+queue: true positives,1043,0.8533077660594439,,,
+queue: FALSE positives,139,0.9784172661870504,,,
+missed fraud (false negatives),3021,0.4399205561072492,,,
+segment: identity present,23769,1.0,0.09335689343262232,0.868020304568528,0.40108156827399727
+segment: identity absent,94339,0.0,0.01955712907705191,0.1319796954314721,0.08292682926829269
