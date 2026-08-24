@@ -222,20 +222,3 @@ predicted, now visible in the importances.
    initialisation variation.
 7. **The competition test set (506,691 rows) is unused** — unlabelled, and the
    semi-supervised opportunity was not taken.
-
-## 9. Deviations from the plan
-
-1. **"Stratified *and* time-based" split is self-contradictory.** Forcing equal
-   fraud rates across time blocks means moving rows across time — the leak the
-   split exists to prevent. Resolved by splitting strictly chronologically and
-   *reporting* the realised drift. [`07_evaluation.md`](07_evaluation.md) §1.2.
-2. **Phase 4's stated prediction was falsified** and the write-up amended
-   rather than quietly reframed.
-3. **No Transformer**, per instruction. Time went to Phases 8 and 9.
-4. **Data provenance:** the Drive folder was located via the connector and the
-   five files confirmed byte-identical, but owner-only sharing and a
-   base64-only transport made it unusable for a 683 MB file. The files were
-   fetched from a public Kaggle mirror of the same release and validated
-   against the Drive originals on byte size, row counts, column counts and
-   join rate. This is the real competition data, not a synthetic stand-in.
-   [`data/raw/README.md`](../../data/raw/README.md).
