@@ -6,6 +6,59 @@ reasoning through leakage-audited, chronologically-validated model comparison.
 
 **Read the report first:** [`reports/final/REPORT.md`](reports/final/REPORT.md).
 
+## Scope
+
+### The problem
+
+**Rank card transactions by fraud risk so that a review team with bounded
+capacity is shown the most suspicious ones first.** The deliverable is an
+ordered queue, not a decision and not a probability: at a 1%-of-volume review
+budget the model decides *what a human looks at*, and a human decides the rest.
+
+This is a **predictive** problem, not a causal one. Nothing here supports a
+claim that a product type or a device *causes* fraud — only that a transaction
+resembles ones historically labelled fraudulent. That framing is what makes
+ranking quality the right target and lets us report precision at an operating
+point a business can actually staff.
+
+### Why this dataset fits the problem
+
+| Property | Why it matters here |
+|---|---|
+| **Real production payments data** (Vesta, via the IEEE-CIS competition) — 590,540 labelled transactions over 183 days | Large enough to train a neural network (20,663 positives) while staying a genuine rare-event problem at **3.50%** fraud |
+| **Timestamped and orderable** | Supports an honest chronological split. Many public fraud datasets are pre-shuffled, which makes temporal leakage impossible to avoid *or* to measure — here we quantify it at **+44% PR-AUC** |
+| **Measurably non-stationary** — weekly fraud rate moves 1.85% → 5.06% | Forces the drift question into the open instead of letting a static split hide it |
+| **Mixed, awkward feature types** — 13,553-level categoricals, 339 anonymised numeric columns, ~1/3 missing and MNAR | Separates the three model families on the things that actually differ: native categorical handling, NaN handling, collinearity tolerance |
+| **Two tables joined at a 24.4% match rate** | The join itself becomes a modelling question rather than plumbing |
+| **Labels are a detection-policy output** | A realistic property of all fraud data, not a defect — and it makes the selection/feedback-bias analysis a required part of the work rather than an aside |
+
+The honest limits: features are anonymised, so no domain semantics are
+available and feature engineering is structural rather than informed; and the
+competition test set is unlabelled, so all evaluation happens inside the
+labelled period.
+
+### Assumptions
+
+Stated in full with their justifications in
+[`reports/final/01_dgp.md`](reports/final/01_dgp.md) §7. In brief:
+
+1. **`TransactionDT` is monotone in real time, in seconds.** Only its *ordering*
+   is relied upon.
+2. **No true calendar alignment is recoverable.** `dt_hour_assumed` and
+   `dt_dow_assumed` are periodic positions against an unknown origin, labelled
+   as assumptions everywhere they appear — never as clock time.
+3. **`card1|card2|card3|card5|addr1` approximates a stable entity.** Known to be
+   wrong in both directions (one 9,900-transaction collision; 40.3% singletons)
+   and quantified rather than hidden.
+4. **Labels are a prior detection policy's output, not ground truth.**
+   Undetected fraud is labelled legitimate, so reported precision is a lower
+   bound and recall an upper bound.
+5. **Fraud labels take ~30 days to adjudicate.** Target encodings honour that
+   lag, because a chargeback that has not arrived is not information you have.
+6. **The observation window is complete** and the label window closed for the
+   training period. Both are unverifiable from the data and are the assumptions
+   we would most want to check with the data owner.
+
 ## Results, traced through the EDA
 
 Every design decision below was forced by a Phase 2 measurement, and each one
