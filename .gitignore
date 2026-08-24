@@ -15,7 +15,7 @@ data/interim/*
 /models/
 mlruns/
 specification/
-scripts/
+/scripts/
 
 # python
 __pycache__/
