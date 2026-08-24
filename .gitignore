@@ -13,6 +13,8 @@ data/interim/*
 *.ckpt
 models/
 mlruns/
+specification/
+scripts/
 
 # python
 __pycache__/

@@ -2,8 +2,7 @@
 
 508 model features are produced by `src/features/build_features.py`. Every one
 carries a **leakage class**, a **rationale**, and an expected **bias/variance**
-effect, because a feature without a justification is not a deliverable for this
-assignment.
+effect.
 
 ## Leakage classes
 
