@@ -3,6 +3,7 @@ data/raw/*
 data/processed/*
 data/interim/*
 !data/raw/.gitkeep
+!data/raw/README.md
 !data/processed/.gitkeep
 !data/interim/.gitkeep
 

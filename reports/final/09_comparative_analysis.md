@@ -73,7 +73,7 @@ worth stating in the project's own terms rather than by appeal to convention:
 
 1. **Native categorical handling is decisive here.** `card1` has 13,553 levels.
    LightGBM partitions levels directly by gradient statistics; the linear and
-   neural models must one-hot or embed. Categorical codes account for **66.8%
+   neural models must one-hot or embed. Categorical codes account for **60.7%
    of total GBM gain** (§4), so this is not a marginal convenience — it is most
    of the model.
 2. **Native NaN handling.** A third of the feature matrix is missing and the
@@ -197,24 +197,32 @@ Share of total LightGBM gain by feature family:
 
 | family | share of gain |
 |---|---:|
-| categorical codes | **66.8%** |
-| raw `C*` (counts) | 9.4% |
-| raw `V*` | 9.2% |
-| amount / assumed-time / join | 3.5% |
-| `D*` reference-day (Phase 3) | 3.4% |
-| point-in-time entity aggregates (Phase 3) | 3.4% |
-| raw `D*` | 2.6% |
-| frequency encodings | 1.5% |
-| target encodings | 0.3% |
+| categorical codes | **60.7%** |
+| raw `V*` | 12.8% |
+| raw `C*` (counts) | 9.0% |
+| point-in-time entity aggregates (Phase 3) | 4.6% |
+| amount / assumed-time / join | 4.1% |
+| `D*` reference-day (Phase 3) | 3.2% |
+| raw `D*` | 3.2% |
+| frequency encodings | 1.8% |
+| target encodings | 0.7% |
+| is-null indicators | 0.07% |
 
-Top individual features: `card1_code` (**37.0%**), `id_19_code` (9.5%),
-`card2_code` (6.8%), `addr1_code` (5.6%), `V294` (4.3%), `C1` (3.3%),
-`C13` (3.0%), `dt_hour_assumed` (2.0%).
+Top individual features: `card1_code` (**33.0%**), `id_19_code` (8.4%),
+`card2_code` (6.0%), `addr1_code` (5.0%), `V294` (3.9%), `C1` (3.0%),
+`C13` (2.7%), `dt_hour_assumed` (1.8%).
+
+*(These are shares of the **full** 508-feature gain vector. An earlier version
+of this table was computed from an importance file that `save_results`
+truncated to the top 50 rows, which inflates every share by silently changing
+the denominator — categorical codes read 66.8% instead of 60.7%. The
+truncation is fixed and the vector is now persisted in full.)*
 
 **Three things follow, and the first is a genuine concern.**
 
 **(a) The model is substantially a card-risk lookup.** `card1_code` alone
-carries 37% of gain. That is legitimate — the card identifier is available at
+carries 33% of gain, and categorical codes 61%. That is legitimate — the
+card identifier is available at
 authorisation time — but it means much of what the model knows is *which cards
 have been trouble*, not *what fraud looks like*. Two consequences: performance
 on genuinely new cards will be materially worse than the headline, and the
@@ -228,19 +236,32 @@ therefore almost entirely a statement about known cards.** Any deployment
 should monitor new-card performance separately, and that is a stated
 limitation rather than a resolved issue.
 
-**(b) The Phase 3 engineered features earn a modest but real 6.8%** (3.4%
-reference-day + 3.4% point-in-time entity aggregates) — more than the
+**(b) The Phase 3 engineered features earn a modest but real 7.8%** (4.6%
+point-in-time entity aggregates + 3.2% reference-day) — more than the
 frequency and target encodings combined. The `day − D` normalisation and the
 strictly-backward-looking velocity features were worth building.
 
-**(c) Target encodings contribute 0.3% of gain — and that is the point.** Phase
-8 showed this share rises to 4.65% at zero label lag and 7.17% with
-full-dataset encoding. The shipped model barely relies on them precisely
+**(c) Target encodings contribute 0.7% of gain — and that is the point.** Phase
+8, measuring the same share on its lighter 600-tree configuration, showed it
+rising to 4.65% at zero label lag and 7.17% with full-dataset encoding.
+The shipped model barely relies on them precisely
 because the leakage controls stripped out the part that was free information.
 A future pipeline change that pushes this number up is a leakage alarm, not an
 improvement.
 
-`dt_hour_assumed` at 2.0% is worth flagging as an *assumption* carrying real
+**(d) The one feature-selection error had no measurable cost — in this model.**
+`R_emaildomain_isnull` should not have been retained (its missingness is 91%
+collinear with the identity join; see `03_feature_dictionary.md` §3). In the
+GBM it carries **0.0000% of gain** — LightGBM simply never split on it, and the
+entire is-null family accounts for 0.07%. So the error changed nothing here.
+It is not free everywhere, though: in the linear model the same indicator ranks
+**24th of the top 50 coefficients** (|coef| 0.657 against a top coefficient of
+3.516), so a model without native categorical handling does lean on a feature
+that is largely a restatement of `has_identity_record`. That is one more reason
+the linear arm underperforms, and a reminder that feature hygiene matters most
+for the models least able to ignore a bad feature.
+
+`dt_hour_assumed` at 1.8% is worth flagging as an *assumption* carrying real
 weight: `TransactionDT` has no known origin, so this is a periodic position,
 not a clock reading. It works because the 24-hour structure is unambiguous
 (Phase 2 §3), but if the true offset were ever recovered the feature should be
@@ -266,6 +287,13 @@ it.
 
 Operational requirements:
 
+0. **Report the queue's metrics segmented by `has_identity_record`, and reserve
+   part of the budget for exploration.** 86.8% of the queue falls in the 20.1%
+   of transactions carrying an identity record, and recall is 40.1% there
+   against 8.3% elsewhere (Phase 1 §4). Pooled precision hides a model that is
+   strong inside the incumbent system's footprint and weak outside it; an
+   exploration slice aimed at the identity-absent segment is the only source of
+   labels in the region where both systems are blind.
 1. **Retrain at least monthly.** Fraud rate moved 1.85% → 5.06% across the
    observed 26 weeks (Phase 2 §1), and the CV-to-holdout drop of 16% is what
    ~40 days of staleness costs.

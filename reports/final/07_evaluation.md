@@ -292,6 +292,14 @@ fraud in the period from 1% of the volume. The linear baseline's queue is right
 a deployable process and one an operations team would abandon in a week, and it
 is far wider than the 2.8× PR-AUC ratio suggests.
 
+**The queue is not evenly spread across the population**, and the headline
+hides it: 86.8% of the 1,182 flagged transactions carry an identity record,
+against a 20.1% base rate, and recall is 40.1% inside that segment versus 8.3%
+outside it. Phase 1 §4 measures this and works through what selection and
+feedback bias each do to these numbers — in short, precision is a lower bound
+while the *incremental* value over the incumbent system is overstated. Any
+deployment should report these metrics segmented rather than pooled.
+
 Recall of 25.5% is the honest ceiling of this operating point, not a
 disappointment: at 1% capacity against a 3.5% base rate, catching everything is
 arithmetically impossible — even a perfect ranker would cap at ~29% recall
