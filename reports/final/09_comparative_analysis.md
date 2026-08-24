@@ -73,7 +73,7 @@ worth stating in the project's own terms rather than by appeal to convention:
 
 1. **Native categorical handling is decisive here.** `card1` has 13,553 levels.
    LightGBM partitions levels directly by gradient statistics; the linear and
-   neural models must one-hot or embed. Categorical codes account for **66.8%
+   neural models must one-hot or embed. Categorical codes account for **60.7%
    of total GBM gain** (§4), so this is not a marginal convenience — it is most
    of the model.
 2. **Native NaN handling.** A third of the feature matrix is missing and the
@@ -221,7 +221,8 @@ truncation is fixed and the vector is now persisted in full.)*
 **Three things follow, and the first is a genuine concern.**
 
 **(a) The model is substantially a card-risk lookup.** `card1_code` alone
-carries 33% of gain, and categorical codes 61%. That is legitimate — the card identifier is available at
+carries 33% of gain, and categorical codes 61%. That is legitimate — the
+card identifier is available at
 authorisation time — but it means much of what the model knows is *which cards
 have been trouble*, not *what fraud looks like*. Two consequences: performance
 on genuinely new cards will be materially worse than the headline, and the
@@ -242,7 +243,8 @@ strictly-backward-looking velocity features were worth building.
 
 **(c) Target encodings contribute 0.7% of gain — and that is the point.** Phase
 8, measuring the same share on its lighter 600-tree configuration, showed it
-rising to 4.65% at zero label lag and 7.17% with full-dataset encoding. The shipped model barely relies on them precisely
+rising to 4.65% at zero label lag and 7.17% with full-dataset encoding.
+The shipped model barely relies on them precisely
 because the leakage controls stripped out the part that was free information.
 A future pipeline change that pushes this number up is a leakage alarm, not an
 improvement.

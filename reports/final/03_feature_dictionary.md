@@ -112,7 +112,10 @@ document got wrong by reasoning structurally instead of empirically:
    through, but recipient email is evidently populated on the same
    product/channel mix that generates identity records. Keeping it was an
    error; it is retained in the shipped `ISNULL_COLS` only because the models
-   were already trained, and §10 below records the measured (nil) impact.
+   were already trained. The measured cost is nil for the GBM — LightGBM never
+   split on it (0.0000% of gain) — but not zero everywhere: in the linear model
+   it ranks 24th of the top 50 coefficients. See
+   `reports/final/09_comparative_analysis.md` §4(d).
 
 The most interesting group is the **inverse** one. `M1`, `M5`–`M9` and `dist1`
 are **100% missing on every transaction that has an identity record** and only
