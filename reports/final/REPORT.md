@@ -198,8 +198,8 @@ GBM's training cost, and the most drift-robust of the three. It loses on
 calibration and on categorical handling, both traceable to specific documented
 choices.
 
-**The main risk in the recommended model:** `card1_code` alone carries **37% of
-total gain**, and categorical codes 66.8%. The model is substantially a
+**The main risk in the recommended model:** `card1_code` alone carries **33% of
+total gain**, and categorical codes 61%. The model is substantially a
 card-risk lookup. **98.6% of holdout transactions use a card seen in
 training**, so the headline number is almost entirely a statement about known
 cards, and new-card performance must be monitored separately. It also means the

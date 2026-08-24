@@ -7,9 +7,10 @@ code stay in one reviewable file and the committed .ipynb is reproducible:
     PYTHONPATH=. jupyter nbconvert --to notebook --execute --inplace \
         --ExecutePreprocessor.timeout=1800 notebooks/02_eda.ipynb
 
-Note: two interpretation paragraphs in the committed notebook were corrected
-after the first execution to match the measured ROC-AUC values; re-running
-this builder restores the pre-correction wording for those two paragraphs.
+The prose here is the source of truth: the committed .ipynb is produced by
+running this file and then executing it, so any correction must be made here
+rather than in the notebook, or regenerating would silently reintroduce the
+old text.
 """
 import nbformat as nbf
 from nbformat.v4 import new_notebook, new_code_cell, new_markdown_cell
@@ -317,9 +318,24 @@ partly a record of the prior policy's triage decisions.
 - Never impute-and-forget. Phase 3 emits an explicit `*_isnull` indicator for the columns where missingness
   is informative, so the signal survives whatever the imputer does to the value.
 - Because the identity-block indicators are near-duplicates of each other, emitting all 171 would add
-  collinear noise. Phase 3 keeps `has_identity_record` as the single canonical version of that signal plus a
-  small number of indicators for columns whose missingness is *not* explained by the join (`dist2`, `D7`,
-  `D12`–`D14`, `M*`).
+  collinear noise. Phase 3 keeps `has_identity_record` as the single canonical version of that signal, plus
+  21 indicators for columns whose missingness carries information the join does not.
+- **Which columns qualify is a measurement, not an inference from which file they live in.** Sitting in
+  `train_transaction.csv` only guarantees that a failed join cannot *mechanically* null a column; it says
+  nothing about whether the column is statistically independent of the join.
+  `scripts/03b_missingness_vs_join.py` measures φ between each is-null indicator and "has no identity
+  record" (with the `id_*` block as a positive control at φ 0.98–1.00) and finds **three** groups where the
+  first draft of this notebook claimed one:
+  **independent** — `card5` 0.004, `card2` 0.041, `P_emaildomain` 0.104, `M4` −0.116;
+  **partly explained by the join** — `D8`/`D9` 0.671, `D13`/`D14` 0.602, `D6` 0.592, `D12` 0.544,
+  `dist2` 0.458, `D7` 0.423, all always-missing without an identity record but only about half-missing with
+  one; and **inverse** — `M6` −0.897, `M1` −0.617, `addr1` −0.557, `dist1`/`M5`/`M7`–`M9` ≈ −0.47, which are
+  missing precisely when the join *succeeds*. That last group is evidence of a second, largely disjoint
+  collection pipeline, and it makes those indicators the most orthogonal to `has_identity_record` of any in
+  the set — in the opposite direction from the one originally assumed.
+- One column does not survive the test: `R_emaildomain` (φ 0.910 — 98.6% missing without an identity record
+  versus 9.1% with one) is nearly as redundant as the excluded `id_*` block. Keeping it was an error, recorded
+  as such in `reports/final/03_feature_dictionary.md` §3.
 - For LightGBM, NaN is passed through natively (it learns a default direction per split). For the linear and
   neural models, NaN must be filled — and the indicator is what stops that fill from destroying information.
 """)
