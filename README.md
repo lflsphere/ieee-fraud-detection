@@ -167,5 +167,4 @@ pytest src/tests -q
    has not arrived yet is not information you have at scoring time.
 4. **Every feature carries a written rationale** —
    `reports/final/03_feature_dictionary.md`.
-5. **No Transformer.** Out of scope for this dataset option; the time went to
-   the leakage audit and the write-up instead.
+
